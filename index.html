@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>槟榔+烟点单系统（Firebase+新订单提示音，美元版）</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #a1c4fd, #c2e9fb);
+      font-family: "Segoe UI", sans-serif;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background-color: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .input-group {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .input-group input {
+      padding: 12px 16px;
+      font-size: 16px;
+      width: 70%;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      outline: none;
+    }
+    .btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 15px;
+      border: none;
+      border-radius: 10px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background-color: #f8f8f8;
+    }
+    .total {
+      text-align: right;
+      font-weight: bold;
+      font-size: 18px;
+      margin-top: -10px;
+      margin-bottom: 30px;
+    }
+    .notification {
+      background-color: #ffefc1;
+      border: 1px solid #f0c36d;
+      padding: 10px 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #7a5900;
+    }
+    .section {
+      margin-top: 40px;
+    }
+    .admin-login {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .admin-login input {
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+    }
+    .hidden {
+      display: none;
+    }
+    .edit-btn {
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      font-size: 14px;
+    }
+    .del-btn {
+      color: #dc3545;
+      cursor: pointer;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      font-size: 14px;
+    }
+    .checkout-btn {
+      background-color: #28a745;
+      margin-left: 16px;
+      font-size: 14px;
+      padding: 7px 15px;
+    }
+    .checkout-btn:hover {
+      background-color: #168833;
+    }
+    .summary-user-box {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: #f9f9f9;
+    }
+    ul {
+      margin-top: 10px;
+    }
+  </style>
+  <!-- Firebase v8 SDK，直接CDN引用 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>槟榔+烟点单系统</h1>
+    <div class="input-group">
+      <input type="text" id="username" placeholder="请输入您的姓名" oninput="updateUserSummary()" />
+    </div>
+    <div class="btn-group">
+      <button onclick="addItem('槟榔', 5)">购买槟榔（$5）</button>
+      <button onclick="addItem('槟榔', 20)">购买槟榔（$20）</button>
+      <button onclick="addItem('烟', 35)">购买烟（$35）</button>
+    </div>
+    <h2>点单记录</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>序号</th>
+          <th>下单人</th>
+          <th>商品</th>
+          <th>单价</th>
+          <th>时间</th>
+          <th id="adminHeader" class="hidden">操作</th>
+        </tr>
+      </thead>
+      <tbody id="orderList"></tbody>
+    </table>
+    <div class="total" id="totalCost">总金额：$0</div>
+    <div class="section">
+      <h2>👤 我的消费记录</h2>
+      <div id="userSummaryBox">请先输入姓名并下单。</div>
+    </div>
+    <div class="admin-login">
+      <input type="password" id="adminPwd" placeholder="管理员密码" />
+      <button onclick="checkAdmin()">管理员登录</button>
+    </div>
+    <div class="section hidden" id="adminSection">
+      <h2>🔔 后台提醒</h2>
+      <div id="notificationBox" class="notification" style="display:none;"></div>
+      <h2>📊 今日销售统计（明细&单人结账）</h2>
+      <div id="adminUserList"></div>
+    </div>
+  </div>
+  <!-- 新订单提示音 -->
+  <audio id="ding" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfa18f7.mp3" preload="auto"></audio>
+  <script>
+    // ======== Firebase 配置 ========
+    var firebaseConfig = {
+      apiKey: "AIzaSyAMMVskugyJX1dpSABKclClgFSTDLOkDlE",
+      authDomain: "binglang.firebaseapp.com",
+      databaseURL: "https://binglang-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "binglang",
+      storageBucket: "binglang.firebasestorage.app",
+      messagingSenderId: "557652181369",
+      appId: "1:557652181369:web:da3efc3e6b8d1834686fa8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.database();
+
+    let adminPassword = "ygrdsj";
+    let adminVisible = false;
+    let orders = [];
+    let orderCount = 0;
+    let total = 0;
+    let lastOrderCount = 0;
+
+    function listenOrders() {
+      db.ref('orders').on('value', snapshot => {
+        const data = snapshot.val();
+        orders = [];
+        orderCount = 0;
+        if (data) {
+          for (let id in data) {
+            orders.push(data[id]);
+            orderCount = Math.max(orderCount, data[id].id);
+          }
+          orders.sort((a, b) => a.id - b.id);
+        }
+
+        // ===== 新订单声音提示 =====
+        if (adminVisible && orders.length > lastOrderCount) {
+          document.getElementById('ding').play();
+        }
+        lastOrderCount = orders.length;
+        // ========================
+
+        renderOrders();
+        updateUserSummary();
+        if(adminVisible) renderAdminUserList();
+      });
+    }
+    listenOrders();
+
+    function addItem(name, price) {
+      const username = document.getElementById("username").value.trim();
+      if (!username) {
+        alert("请先输入您的姓名！");
+        return;
+      }
+      const now = new Date();
+      orderCount++;
+      const order = {
+        id: orderCount,
+        user: username,
+        item: name,
+        price: price,
+        time: now.toLocaleString()
+      };
+      db.ref('orders/' + order.id).set(order);
+      showNotification(`${username} 刚刚购买了 ${name}（$${price}）`);
+    }
+
+    function editOrder(index) {
+      const order = orders[index];
+      const newUser = prompt("修改下单人姓名：", order.user);
+      const newItem = prompt("修改商品名：", order.item);
+      const newPrice = parseFloat(prompt("修改价格：", order.price));
+      if (newUser && newItem && !isNaN(newPrice)) {
+        const newOrder = {
+          ...order,
+          user: newUser.trim(),
+          item: newItem.trim(),
+          price: newPrice
+        };
+        db.ref('orders/' + order.id).set(newOrder);
+      } else {
+        alert("输入无效，未保存修改");
+      }
+    }
+
+    function deleteOrder(index) {
+      if(confirm("确定要删除此条消费记录吗？")) {
+        db.ref('orders/' + orders[index].id).remove();
+      }
+    }
+
+    function checkoutUser(user) {
+      if (!adminVisible) return;
+      if (orders.filter(o => o.user === user).length === 0) {
+        alert("该用户没有消费记录。");
+        return;
+      }
+      if (confirm(`确定要结账并清空【${user}】的所有消费记录吗？操作不可撤销。`)) {
+        orders.forEach(order => {
+          if (order.user === user) {
+            db.ref('orders/' + order.id).remove();
+          }
+        });
+        showNotification(`已为【${user}】结账，消费记录已清空！`);
+      }
+    }
+
+    function checkAdmin() {
+      const pwd = document.getElementById("adminPwd").value;
+      if (pwd === adminPassword) {
+        adminVisible = true;
+        document.getElementById("adminSection").classList.remove("hidden");
+        document.getElementById("adminHeader").classList.remove("hidden");
+        alert("✅ 管理员登录成功！");
+        renderOrders();
+        updateUserSummary();
+        renderAdminUserList();
+        lastOrderCount = orders.length; // 避免一登录就响
+      } else {
+        alert("❌ 密码错误！");
+      }
+    }
+
+    function renderOrders() {
+      const table = document.getElementById("orderList");
+      table.innerHTML = "";
+      total = 0;
+      orders.forEach((order, index) => {
+        total += order.price;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${order.user}</td>
+          <td>${order.item}</td>
+          <td>$${order.price}</td>
+          <td>${order.time}</td>
+          <td class="${adminVisible ? '' : 'hidden'}">
+            <button class="edit-btn" onclick="editOrder(${index})">编辑</button>
+            <button class="del-btn" onclick="deleteOrder(${index})">删除</button>
+          </td>
+        `;
+        table.appendChild(row);
+      });
+      document.getElementById("totalCost").textContent = "总金额：$" + total;
+    }
+
+    function updateUserSummary() {
+      const currentUser = document.getElementById("username").value.trim();
+      const box = document.getElementById("userSummaryBox");
+      if (!currentUser) {
+        box.textContent = "请先输入姓名并下单。";
+        return;
+      }
+      const userOrders = orders.filter(order => order.user === currentUser);
+      if (userOrders.length === 0) {
+        box.textContent = `${currentUser} 当前没有任何消费记录。`;
+        return;
+      }
+      let html = `<strong>${currentUser}</strong> 的消费记录：<ul>`;
+      let userTotal = 0;
+      userOrders.forEach(order => {
+        html += `<li>${order.item} $${order.price}（${order.time}）</li>`;
+        userTotal += order.price;
+      });
+      html += `</ul><p>共消费 ${userOrders.length} 单，合计 $${userTotal}</p>`;
+      box.innerHTML = html;
+    }
+
+    function renderAdminUserList() {
+      const box = document.getElementById("adminUserList");
+      if (!adminVisible) { box.innerHTML = ""; return; }
+      if (orders.length === 0) {
+        box.innerHTML = "<div style='text-align:center;'>暂无消费记录。</div>";
+        return;
+      }
+      // 按人聚合
+      const map = {};
+      orders.forEach(o => {
+        if (!map[o.user]) map[o.user] = [];
+        map[o.user].push(o);
+      });
+      let html = "";
+      for (const user in map) {
+        const arr = map[user];
+        let subtotal = 0;
+        html += `<div class="summary-user-box"><strong>${user}</strong>
+        <button class="checkout-btn" onclick="checkoutUser('${user}')">结账清空</button>
+        <ul>`;
+        arr.forEach(order => {
+          html += `<li>${order.item} $${order.price}（${order.time}）</li>`;
+          subtotal += order.price;
+        });
+        html += `</ul><b>合计：$${subtotal} （${arr.length} 单）</b></div>`;
+      }
+      box.innerHTML = html;
+    }
+
+    function showNotification(msg) {
+      if (!adminVisible) return;
+      const box = document.getElementById("notificationBox");
+      box.style.display = "block";
+      box.textContent = msg;
+      setTimeout(() => {
+        box.style.display = "none";
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
