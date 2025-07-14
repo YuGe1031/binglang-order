@@ -9,7 +9,8 @@
     body {
       margin: 0; padding: 0;
       min-height: 100vh;
-      background: linear-gradient(135deg, #a8c0ff 0%, #f9f9f9 100%);
+      background: url('https://i.postimg.cc/BZHmcgB2/photo-2022-05-15-18-19-50.jpg') no-repeat center center fixed;
+      background-size: cover;
       font-family: "SF Pro Display", "PingFang SC", "Segoe UI", Arial, sans-serif;
       letter-spacing: 0.03em;
       -webkit-font-smoothing: antialiased;
@@ -687,6 +688,7 @@
     let inventory = [];
     let currentEditProduct = null;
     let currentEditOrder = null;
+    let inventoryListenerActive = false;
 
     // 获取库存数组
     function getInventoryArray() {
@@ -715,12 +717,14 @@
 
     // 监听库存变化
     function listenInventory() {
+      if (inventoryListenerActive) return;
       db.ref('inventory').on('value', snapshot => {
         inventory = snapshot.val() || [];
         updateInventoryUI();
         updateStockStatus();
         renderProductButtons(); // 库存变化时重新渲染按钮
       });
+      inventoryListenerActive = true;
     }
 
     // 渲染商品购买按钮
@@ -1574,6 +1578,8 @@
       localStorage.setItem("userPwd", pwd);
       updateUIByLoginState();
       updateUserSummary();
+      // 监听库存变化并渲染商品按钮
+      listenInventory();
     }
 
     function logout() {
@@ -1583,6 +1589,11 @@
       adminDetailUser = "__ALL__";
       currentFilter = "all";
       currentSort = { key: "id", asc: true };
+      // 移除库存监听
+      if (inventoryListenerActive) {
+        db.ref('inventory').off('value');
+        inventoryListenerActive = false;
+      }
       updateUIByLoginState();
       updateUserSummary();
     }
@@ -1595,13 +1606,13 @@
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('registerBtn').style.display = 'none';
         document.getElementById('loginTip').style.display = 'none';
+        document.getElementById('systemPanel').style.display = 'block';
 
         isAdminAccount = (currentUser === "余歌");
         if (isAdminAccount) {
           document.getElementById('adminPanelWrap').classList.remove('hidden');
-          // 初始化及监听库存只需一次
+          // 初始化库存
           initInventory();
-          listenInventory();
           renderAdminUserList();
           if(adminDetailUser === "__ALL__") showAdminAllOrdersTable();
           else showAdminUserDetail(adminDetailUser, false);
@@ -1617,6 +1628,7 @@
         document.getElementById('registerBtn').style.display = '';
         document.getElementById('loginTip').style.display = '';
         document.getElementById('loginTip').textContent = "请登录后才能下单和查看消费记录。";
+        document.getElementById('systemPanel').style.display = 'none';
         document.getElementById('adminPanelWrap').classList.add('hidden');
         document.getElementById('adminUserDetail').classList.add('hidden');
         isAdminAccount = false;
