@@ -175,11 +175,95 @@
       animation: adminpop .7s cubic-bezier(.8,-0.1,.3,1.2);
       display:none;
     }
-    @keyframes adminpop {from{transform:translateX(-50%) scale(0.86);}to{transform:translateX(-50%) scale(1);}}
+    
+    /* 新增：管理员弹窗样式 */
+    .admin-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10000;
+      min-width: 320px;
+      max-width: 90%;
+      background: linear-gradient(135deg, #ffd740 0%, #ffc400 100%);
+      border-radius: 18px;
+      padding: 24px 32px;
+      box-shadow: 0 16px 40px rgba(120, 80, 0, 0.3);
+      text-align: center;
+      animation: adminpop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: none;
+      border: 2px solid #ffb300;
+    }
+    .admin-popup-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #5d2900;
+      margin-bottom: 16px;
+      text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+    }
+    .admin-popup-content {
+      font-size: 18px;
+      font-weight: 700;
+      color: #7a3c00;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+    .admin-popup-btn {
+      background: #5d2900;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 32px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(93,41,0,0.3);
+    }
+    .admin-popup-btn:hover {
+      background: #7a3c00;
+      transform: translateY(-2px);
+    }
+    .admin-popup-btn:active {
+      transform: translateY(1px);
+    }
+    
+    @keyframes adminpop {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @media (max-width: 500px) {
+      .admin-popup {
+        width: 90%;
+        padding: 20px;
+      }
+      .admin-popup-title {
+        font-size: 20px;
+      }
+      .admin-popup-content {
+        font-size: 16px;
+      }
+    }
+
     .modal {position: fixed; z-index: 9999; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;}
     .modal-box {background: rgba(255,255,255,0.96); padding: 38px 36px 28px 36px; border-radius: 18px; min-width: 320px; max-width:95vw; box-shadow: 0 16px 48px rgba(40,60,100,.13); text-align: center;}
     .modal-box input {width: 92%; font-size: 16px; margin-bottom: 18px; padding: 10px 8px; border-radius: 9px; border: 1px solid #bbb; outline: none;}
     .modal-box .tip {color: #d55; font-size: 15px; min-height: 18px; margin-bottom: 8px;}
+    
+    /* 新增：表单标签样式 */
+    .form-label {
+      display: block;
+      text-align: left;
+      margin: 15px 0 8px 15px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #3161b8;
+    }
+    .form-label:first-child {
+      margin-top: 0;
+    }
+    
     .hidden {display: none;}
     .custom-modal-btn {
       border:none;border-radius:8px;font-size:15px;font-weight:bold;padding:8px 32px;cursor:pointer;margin:8px 10px;transition:.13s;
@@ -469,6 +553,14 @@
     <button class="register-btn" id="registerBtn" onclick="showRegisterModal()">注册</button>
     <button class="logout-btn" id="logoutBtn" style="display:none;" onclick="logout()">退出</button>
   </div>
+  
+  <!-- 管理员弹窗 -->
+  <div class="admin-popup" id="adminPopup">
+    <div class="admin-popup-title" id="adminPopupTitle">新订单通知</div>
+    <div class="admin-popup-content" id="adminPopupContent"></div>
+    <button class="admin-popup-btn" onclick="document.getElementById('adminPopup').style.display='none'">知道了</button>
+  </div>
+  
   <div class="container">
     <h1>槟榔+烟点单系统</h1>
     <div id="systemPanel">
@@ -592,8 +684,10 @@
     <div class="modal-box">
       <h2>登录</h2>
       <div class="tip" id="loginModalTip"></div>
-      <input type="text" id="loginName" maxlength="6" placeholder="请输入账号（中文2-6字）" />
-      <input type="password" id="loginPwd" maxlength="20" placeholder="请输入密码" />
+      <div class="form-label">账号（中文2-6字）</div>
+      <input type="text" id="loginName" maxlength="6" />
+      <div class="form-label">密码</div>
+      <input type="password" id="loginPwd" maxlength="20" />
       <br />
       <button onclick="doLogin()" class="main-btn" style="width:85%;margin-top:5px;">登录</button>
       <div style="margin-top:14px;color:#555;font-size:13px;">没有账号？请点击右上角“注册”</div>
@@ -605,8 +699,10 @@
     <div class="modal-box">
       <h2>注册</h2>
       <div class="tip" id="registerModalTip"></div>
-      <input type="text" id="registerName" maxlength="6" placeholder="账号（2-6位中文）" />
-      <input type="password" id="registerPwd" maxlength="20" placeholder="密码（6-20位，建议复杂些）" />
+      <div class="form-label">账号（2-6位中文）</div>
+      <input type="text" id="registerName" maxlength="6" />
+      <div class="form-label">密码（6-20位）</div>
+      <input type="password" id="registerPwd" maxlength="20" />
       <br />
       <button onclick="doRegister()" class="main-btn" style="width:85%;margin-top:5px;">注册</button>
       <div style="margin-top:14px;color:#555;font-size:13px;">已有账号？请点击右上角“登录”</div>
@@ -623,10 +719,14 @@
     <div class="modal-box">
       <h2>添加商品</h2>
       <div class="tip" id="addProductTip"></div>
-      <input type="text" id="productName" placeholder="商品名称" />
-      <input type="number" id="productPrice" placeholder="单价" min="1" />
-      <input type="number" id="productStock" placeholder="初始库存" min="0" />
-      <input type="number" id="productPerOrder" placeholder="每次下单数量" min="0.01" step="0.01" value="1" />
+      <div class="form-label">商品名称</div>
+      <input type="text" id="productName" />
+      <div class="form-label">单价</div>
+      <input type="number" id="productPrice" min="1" />
+      <div class="form-label">初始库存</div>
+      <input type="number" id="productStock" min="0" />
+      <div class="form-label">每次下单数量</div>
+      <input type="number" id="productPerOrder" min="0.01" step="0.01" value="1" />
       <br />
       <button onclick="addProduct()" class="main-btn" style="width:85%;margin-top:5px;">添加</button>
       <button onclick="document.getElementById('addProductModal').classList.add('hidden')" class="main-btn" style="width:85%;margin-top:10px;background:#eee;color:#555;">取消</button>
@@ -638,10 +738,14 @@
     <div class="modal-box">
       <h2>编辑商品</h2>
       <div class="tip" id="editProductTip"></div>
-      <input type="text" id="editProductName" placeholder="商品名称" />
-      <input type="number" id="editProductPrice" placeholder="单价" min="1" />
-      <input type="number" id="editProductStock" placeholder="总库存" min="0" />
-      <input type="number" id="editProductPerOrder" placeholder="每次下单数量" min="0.01" step="0.01" value="1" />
+      <div class="form-label">商品名称</div>
+      <input type="text" id="editProductName" />
+      <div class="form-label">单价</div>
+      <input type="number" id="editProductPrice" min="1" />
+      <div class="form-label">总库存</div>
+      <input type="number" id="editProductStock" min="0" />
+      <div class="form-label">每次下单数量</div>
+      <input type="number" id="editProductPerOrder" min="0.01" step="0.01" value="1" />
       <br />
       <button onclick="updateProduct()" class="main-btn" style="width:85%;margin-top:5px;">保存</button>
       <button onclick="document.getElementById('editProductModal').classList.add('hidden')" class="main-btn" style="width:85%;margin-top:10px;background:#eee;color:#555;">取消</button>
@@ -653,16 +757,29 @@
     <div class="modal-box">
       <h2>编辑订单</h2>
       <div class="tip" id="editOrderTip"></div>
-      <input type="number" id="editOrderPrice" placeholder="金额" min="0" step="0.01" />
-      <input type="number" id="editOrderQuantity" placeholder="数量" min="0.01" step="0.01" />
+      <div class="form-label">金额</div>
+      <input type="number" id="editOrderPrice" min="0" step="0.01" />
+      <div class="form-label">数量</div>
+      <input type="number" id="editOrderQuantity" min="0.01" step="0.01" />
       <br />
       <button onclick="saveOrderChanges()" class="main-btn" style="width:85%;margin-top:5px;">保存</button>
       <button onclick="document.getElementById('editOrderModal').classList.add('hidden')" class="main-btn" style="width:85%;margin-top:10px;background:#eee;color:#555;">取消</button>
     </div>
   </div>
 
-  <audio id="ding" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfa18f7.mp3" preload="auto"></audio>
+  <!-- 替换为有效的音频资源 -->
+  <audio id="ding" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" preload="auto"></audio>
+  
   <script>
+    // 新增缺失的函数定义
+    function showLoginModal() {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    function showRegisterModal() {
+      document.getElementById('registerModal').classList.remove('hidden');
+    }
+
     // Firebase 初始化
     var firebaseConfig = {
       apiKey: "AIzaSyAMMVskugyJX1dpSABKclClgFSTDLOkDlE",
@@ -799,8 +916,8 @@
           statusText = '库存充足';
         }
         const row = document.createElement('tr');
-        row.innerHTML = 
-          `<td>${product.name}</td>
+        row.innerHTML = `
+          <td>${product.name}</td>
           <td>$${product.price}</td>
           <td>${product.totalStock}</td>
           <td>${product.remainingStock}</td>
@@ -810,7 +927,8 @@
             <button class="action-btn add-stock-btn" onclick="addStock(${index})">加库存</button>
             <button class="action-btn edit-product-btn" onclick="editProduct(${index})">编辑</button>
             <button class="action-btn delete-product-btn" onclick="deleteProduct(${index})">删除</button>
-          </td>`;
+          </td>
+        `;
         tableBody.appendChild(row);
       });
     }
@@ -965,7 +1083,8 @@
           if (newOrders.length > 0) {
             let latest = newOrders[newOrders.length - 1];
             if (latest.user !== currentUser) {
-              adminShowPopup(`新订单：${latest.user} 下单了 ${latest.item}（$${latest.price}）`);
+              // 使用自定义弹窗替代alert
+              showAdminPopup(`新订单：${latest.user} 下单了 ${latest.item}（$${latest.price}）`);
               document.getElementById('ding').play();
             }
           }
@@ -984,6 +1103,20 @@
       });
     }
     listenOrders();
+
+    // 显示管理员弹窗
+    function showAdminPopup(msg) {
+      const popup = document.getElementById('adminPopup');
+      const content = document.getElementById('adminPopupContent');
+      content.textContent = msg;
+      popup.style.display = 'block';
+      
+      // 5秒后自动关闭
+      clearTimeout(popup.timeout);
+      popup.timeout = setTimeout(() => {
+        popup.style.display = 'none';
+      }, 5000);
+    }
 
     // 下单
     function addItem(productName) {
@@ -1040,7 +1173,8 @@
       }
       let html = `<div class="user-glassbox"><ul>`;
       userOrders.forEach(order => {
-        html += `<li>
+        html += `
+        <li>
           <div class="li-desc">
             <span>${order.item}</span> 
             <span style="color:#3574f6;">$${order.price}</span>
@@ -1050,7 +1184,8 @@
             <span class="li-time">${order.time}</span>
             <span class="li-status ${order.delivered ? 'delivered' : 'undelivered'}">${order.delivered ? '已送货' : '未送货'}</span>
           </div>
-        </li>`;
+        </li>
+        `;
       });
       const total = userOrders.reduce((sum, o) => sum + o.price, 0);
       html += `</ul><div style="font-weight:700;color:#184fa9;margin:12px 0 6px 0;text-align:right;">共${userOrders.length}单，合计$${total}</div></div>`;
@@ -1071,10 +1206,12 @@
       let html = `<button class="admin-user-btn${adminDetailUser === "__ALL__" ? ' active' : ''}" onclick="toggleAdminUserDetail('__ALL__')">全部订单明细</button>`;
       for (const user in map) {
         const count = map[user].length;
-        html += `<div style="margin-bottom:6px;">
+        html += `
+        <div style="margin-bottom:6px;">
           <button class="admin-user-btn${adminDetailUser === user ? ' active' : ''}" onclick="toggleAdminUserDetail('${user}')">${user}（${count}单）</button>
           <button class="admin-btn checkout-btn" onclick="checkoutUser('${user}')">结账</button>
-        </div>`;
+        </div>
+        `;
       }
       document.getElementById("adminUserList").innerHTML = html;
     }
@@ -1413,12 +1550,13 @@
       let box = document.getElementById('customModalBox');
       let modal = document.getElementById('customModal');
       let type = opts && opts.type || 'confirm', input = opts && opts.input;
-      box.innerHTML = 
-        `<div style="margin-bottom:20px;font-size:17px;color:#223;font-weight:700;white-space:pre-wrap;">${msg}</div>
+      box.innerHTML = `
+        <div style="margin-bottom:20px;font-size:17px;color:#223;font-weight:700;white-space:pre-wrap;">${msg}</div>
         ${input ? `<input id="customInput" type="${input === 'number' ? 'number' : 'text'}" style="font-size:17px;margin-bottom:16px;" value="${opts.value || ''}" />` : ""}
         <button class="custom-modal-btn custom-confirm">${type === 'warn' ? '确定' : '确定'}</button>
         <button class="custom-modal-btn custom-cancel">取消</button>
-        <div style="height:4px"></div>`;
+        <div style="height:4px"></div>
+      `;
       modal.classList.remove('hidden');
       box.querySelector('.custom-cancel').onclick = () => {
         modal.classList.add('hidden');
@@ -1439,12 +1577,13 @@
       let box = document.getElementById('customModalBox');
       let modal = document.getElementById('customModal');
       let inputType = (opts && opts.input) || 'text';
-      box.innerHTML = 
-        `<div style="margin-bottom:20px;font-size:17px;color:#223;font-weight:700;white-space:pre-wrap;">${msg}</div>
+      box.innerHTML = `
+        <div style="margin-bottom:20px;font-size:17px;color:#223;font-weight:700;white-space:pre-wrap;">${msg}</div>
         <input id="customInput" type="${inputType}" style="font-size:17px;margin-bottom:16px;" value="${opts?.value || ''}" />
         <button class="custom-modal-btn custom-confirm">确定</button>
         <button class="custom-modal-btn custom-cancel">取消</button>
-        <div style="height:4px"></div>`;
+        <div style="height:4px"></div>
+      `;
       modal.classList.remove('hidden');
       box.querySelector('.custom-cancel').onclick = () => {
         modal.classList.add('hidden');
@@ -1462,10 +1601,11 @@
     function customAlert(msg, type, cb) {
       let box = document.getElementById('customModalBox');
       let modal = document.getElementById('customModal');
-      box.innerHTML = 
-        `<div style="margin-bottom:16px;font-size:17px;font-weight:700;color:${type == 'warn' ? '#bb2222' : '#2d7df0'};white-space:pre-wrap;">${msg}</div>
+      box.innerHTML = `
+        <div style="margin-bottom:16px;font-size:17px;font-weight:700;color:${type == 'warn' ? '#bb2222' : '#2d7df0'};white-space:pre-wrap;">${msg}</div>
         <button class="custom-modal-btn custom-confirm">确定</button>
-        <div style="height:3px"></div>`;
+        <div style="height:3px"></div>
+      `;
       modal.classList.remove('hidden');
       box.querySelector('.custom-confirm').onclick = () => {
         modal.classList.add('hidden');
@@ -1484,28 +1624,9 @@
       }, 3500);
     }
 
-    // 管理员新订单弹窗提示
-    function adminShowPopup(msg) {
-      alert(msg);
-    }
-
     // 登录注册相关
-    function showLoginModal() {
-      document.getElementById('loginModal').classList.remove('hidden');
-      document.getElementById('loginModalTip').textContent = "";
-      document.getElementById('loginName').value = "";
-      document.getElementById('loginPwd').value = "";
-      document.getElementById('loginName').focus();
-    }
     function hideLoginModal() {
       document.getElementById('loginModal').classList.add('hidden');
-    }
-    function showRegisterModal() {
-      document.getElementById('registerModal').classList.remove('hidden');
-      document.getElementById('registerModalTip').textContent = "";
-      document.getElementById('registerName').value = "";
-      document.getElementById('registerPwd').value = "";
-      document.getElementById('registerName').focus();
     }
     function hideRegisterModal() {
       document.getElementById('registerModal').classList.add('hidden');
@@ -1666,6 +1787,7 @@
         document.getElementById('addProductModal').classList.add('hidden');
         document.getElementById('editProductModal').classList.add('hidden');
         document.getElementById('editOrderModal').classList.add('hidden');
+        document.getElementById('adminPopup').style.display = 'none';
       }
     });
 
@@ -1739,3 +1861,4 @@
   </script>
 </body>
 </html>
+
