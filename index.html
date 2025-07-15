@@ -1219,6 +1219,43 @@
     .unsettled-amount {
       color: #e74c3c;
     }
+    
+    /* 消费记录优化 */
+    .order-details-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 15px;
+      background: rgba(230, 240, 255, 0.4);
+      border-radius: 12px;
+    }
+    
+    .order-detail-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .order-detail-label {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    
+    .order-detail-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #3161b8;
+    }
+    
+    .total-price {
+      color: #e74c3c;
+      font-weight: 800;
+    }
   </style>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -1953,7 +1990,7 @@
       showNotification(`下单成功：${productName}（$${product.price}）`);
     }
 
-    // 更新用户消费记录显示
+    // 更新用户消费记录显示（优化版）
     function updateUserSummary() {
       const box = document.getElementById("userSummaryBox");
       if (!currentUser) {
@@ -1967,36 +2004,52 @@
       }
       
       let html = `<div class="user-glassbox"><ul>`;
+      
+      // 添加订单详情网格
       userOrders.forEach(order => {
-        const settleBtn = !order.settled ? `<button class="admin-btn settle-btn" onclick="settleOrder(${order.id})">结账</button>` : '';
-        const paymentStatus = order.paymentSubmitted ? `<span class="li-status" style="background:rgba(253,115,115,0.19);color:#c00;border:1.2px solid #fda0a0;">待确认付款</span>` : '';
+        const totalPrice = order.price * order.quantity;
         
         html += `
         <li>
-          <div class="li-desc">
-            <span>${order.item}</span> 
-            <span style="color:#3574f6;">$${order.price}</span>
-            <span class="quantity-display">×${order.quantity}</span>
+          <div class="order-details-grid">
+            <div class="order-detail-item">
+              <div class="order-detail-label">商品名称</div>
+              <div class="order-detail-value">${order.item}</div>
+            </div>
+            <div class="order-detail-item">
+              <div class="order-detail-label">单价</div>
+              <div class="order-detail-value">$${order.price}</div>
+            </div>
+            <div class="order-detail-item">
+              <div class="order-detail-label">数量</div>
+              <div class="order-detail-value">${order.quantity}</div>
+            </div>
+            <div class="order-detail-item">
+              <div class="order-detail-label">总价</div>
+              <div class="order-detail-value total-price">$${totalPrice.toFixed(2)}</div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;">
+          <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:0 10px;">
             <span class="li-time">${order.time}</span>
-            <span class="li-status ${order.delivered ? 'delivered' : 'undelivered'}">${order.delivered ? '已送货' : '未送货'}</span>
-            <span class="li-status ${order.settled ? 'settled' : 'undelivered'}">${order.settled ? '已结账' : '未结账'}</span>
-            ${paymentStatus}
-            ${settleBtn}
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="li-status ${order.delivered ? 'delivered' : 'undelivered'}">${order.delivered ? '已送货' : '未送货'}</span>
+              <span class="li-status ${order.settled ? 'settled' : 'undelivered'}">${order.settled ? '已结账' : '未结账'}</span>
+              ${order.paymentSubmitted ? `<span class="li-status" style="background:rgba(253,115,115,0.19);color:#c00;border:1.2px solid #fda0a0;">待确认付款</span>` : ''}
+              ${!order.settled ? `<button class="admin-btn settle-btn" onclick="settleOrder(${order.id})">结账</button>` : ''}
+            </div>
           </div>
         </li>
         `;
       });
       
-      const total = userOrders.reduce((sum, o) => sum + o.price, 0);
-      const unsettledTotal = userOrders.filter(o => !o.settled).reduce((sum, o) => sum + o.price, 0);
+      const total = userOrders.reduce((sum, o) => sum + (o.price * o.quantity), 0);
+      const unsettledTotal = userOrders.filter(o => !o.settled).reduce((sum, o) => sum + (o.price * o.quantity), 0);
       
       html += `
         <div class="settle-total">
           <div>
-            <div style="font-weight:700;color:#184fa9;">共${userOrders.length}单，合计$${total}</div>
-            <div style="font-weight:700;color:#e74c3c;">未结账金额: $${unsettledTotal}</div>
+            <div style="font-weight:700;color:#184fa9;">共${userOrders.length}单，合计$${total.toFixed(2)}</div>
+            <div style="font-weight:700;color:#e74c3c;">未结账金额: $${unsettledTotal.toFixed(2)}</div>
           </div>
           <button class="settle-action-btn" onclick="settleAllOrders()">全部结账</button>
         </div>
@@ -2080,8 +2133,9 @@
           <th onclick="toggleSort('id')" style="cursor:pointer;">订单ID ${sortArrow('id')}</th>
           <th onclick="toggleSort('user')" style="cursor:pointer;">用户 ${sortArrow('user')}</th>
           <th onclick="toggleSort('item')" style="cursor:pointer;">商品 ${sortArrow('item')}</th>
-          <th onclick="toggleSort('price')" style="cursor:pointer;">金额 ${sortArrow('price')}</th>
+          <th onclick="toggleSort('price')" style="cursor:pointer;">单价 ${sortArrow('price')}</th>
           <th>数量</th>
+          <th>总价</th>
           <th onclick="toggleSort('time')" style="cursor:pointer;">下单时间 ${sortArrow('time')}</th>
           <th>送货状态</th>
           <th>结账状态</th>
@@ -2089,6 +2143,7 @@
         </tr></thead><tbody>`;
 
       filteredOrders.forEach(order => {
+        const totalPrice = order.price * order.quantity;
         const deliveredBtn = order.delivered ? `<span class="li-status delivered">已送货</span>` : `<button class="admin-btn deliver-btn" onclick="markDelivered(${order.id})">未送货</button>`;
         
         let settledBtn = '';
@@ -2107,6 +2162,7 @@
           <td>${order.item}</td>
           <td>$${order.price}</td>
           <td>${order.quantity}</td>
+          <td>$${totalPrice.toFixed(2)}</td>
           <td>${order.time}</td>
           <td>${deliveredBtn}</td>
           <td>${settledBtn}</td>
@@ -2128,8 +2184,8 @@
       
       // 计算该用户的所有订单统计信息
       const allUserOrders = orders.filter(o => o.user === user);
-      const totalAmount = allUserOrders.reduce((sum, o) => sum + o.price, 0);
-      const settledAmount = allUserOrders.filter(o => o.settled).reduce((sum, o) => sum + o.price, 0);
+      const totalAmount = allUserOrders.reduce((sum, o) => sum + (o.price * o.quantity), 0);
+      const settledAmount = allUserOrders.filter(o => o.settled).reduce((sum, o) => sum + (o.price * o.quantity), 0);
       const unsettledAmount = totalAmount - settledAmount;
       
       let userOrders = orders.filter(o => o.user === user);
@@ -2178,8 +2234,9 @@
         <thead><tr>
           <th onclick="toggleSort('id')" style="cursor:pointer;">订单ID ${sortArrow('id')}</th>
           <th onclick="toggleSort('item')" style="cursor:pointer;">商品 ${sortArrow('item')}</th>
-          <th onclick="toggleSort('price')" style="cursor:pointer;">金额 ${sortArrow('price')}</th>
+          <th onclick="toggleSort('price')" style="cursor:pointer;">单价 ${sortArrow('price')}</th>
           <th>数量</th>
+          <th>总价</th>
           <th onclick="toggleSort('time')" style="cursor:pointer;">下单时间 ${sortArrow('time')}</th>
           <th>送货状态</th>
           <th>结账状态</th>
@@ -2187,6 +2244,7 @@
         </tr></thead><tbody>`;
 
       userOrders.forEach(order => {
+        const totalPrice = order.price * order.quantity;
         const deliveredBtn = order.delivered ? `<span class="li-status delivered">已送货</span>` : `<button class="admin-btn deliver-btn" onclick="markDelivered(${order.id})">未送货</button>`;
         
         let settledBtn = '';
@@ -2204,6 +2262,7 @@
           <td>${order.item}</td>
           <td>$${order.price}</td>
           <td>${order.quantity}</td>
+          <td>$${totalPrice.toFixed(2)}</td>
           <td>${order.time}</td>
           <td>${deliveredBtn}</td>
           <td>${settledBtn}</td>
@@ -2420,8 +2479,9 @@
       currentSettleOrder = order;
       currentSettleAll = false;
       
-      document.getElementById('settleAmount').textContent = `$${order.price.toFixed(2)}`;
-      document.getElementById('settleAmountText').textContent = `$${order.price.toFixed(2)}`;
+      const totalPrice = order.price * order.quantity;
+      document.getElementById('settleAmount').textContent = `$${totalPrice.toFixed(2)}`;
+      document.getElementById('settleAmountText').textContent = `$${totalPrice.toFixed(2)}`;
       document.getElementById('settleModal').style.display = 'block';
     }
     
@@ -2433,7 +2493,7 @@
         return;
       }
       
-      const totalAmount = userOrders.reduce((sum, o) => sum + o.price, 0);
+      const totalAmount = userOrders.reduce((sum, o) => sum + (o.price * o.quantity), 0);
       
       currentSettleOrder = null;
       currentSettleAll = true;
