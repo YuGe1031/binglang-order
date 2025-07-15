@@ -3226,6 +3226,21 @@
    document.getElementById('addOrderModal').classList.add('hidden');
    showNotification(`已为用户 ${username} 添加订单：${product.name}（数量：${quantity}）`);
  }
+  
+  // 修复函数：显示登录弹窗
+  function showLoginModal() {
+    document.getElementById('loginModal').classList.remove('hidden');
+  }
+  
+  // 修复函数：显示注册弹窗
+  function showRegisterModal() {
+    document.getElementById('registerModal').classList.remove('hidden');
+  }
+  
+  // 修复函数：显示修改密码弹窗
+  function showChangePwdModal() {
+    document.getElementById('changePwdModal').classList.remove('hidden');
+  }
   </script>
 </body>
 </html>
