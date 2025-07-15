@@ -2444,7 +2444,7 @@
     currentEditOrder = null;
   }
 
-  // 删除订单
+  // 删除订单 - 重点修复库存恢复逻辑
   function deleteOrder(id) {
     let order = orders.find(o => o.id === id);
     if (!order) return;
@@ -2458,18 +2458,33 @@
       if (productIndex >= 0) {
         const product = invArr[productIndex];
         let updates = {};
+        
+        // 计算订单总金额
+        const orderAmount = order.price * order.quantity;
+        
         if (!order.delivered) {
             // 未送货：恢复剩余库存和未结账金额
             updates.remainingStock = (product.remainingStock || 0) + order.quantity;
-            updates.unsettledAmount = (product.unsettledAmount || 0) - (order.price * order.quantity);
+            updates.unsettledAmount = (product.unsettledAmount || 0) - orderAmount;
         } else {
             // 已送货：恢复已售出数量
             updates.sold = (product.sold || 0) - order.quantity;
-            // 如果订单已结账，还需要恢复结账金额
+            
             if (order.settled) {
-                updates.settledAmount = (product.settledAmount || 0) - (order.price * order.quantity);
+                // 已结账：恢复结账金额
+                updates.settledAmount = (product.settledAmount || 0) - orderAmount;
+            } else {
+                // 未结账：恢复未结账金额
+                updates.unsettledAmount = (product.unsettledAmount || 0) - orderAmount;
             }
         }
+        
+        // 确保库存数值不会为负
+        if (updates.remainingStock !== undefined && updates.remainingStock < 0) updates.remainingStock = 0;
+        if (updates.sold !== undefined && updates.sold < 0) updates.sold = 0;
+        if (updates.unsettledAmount !== undefined && updates.unsettledAmount < 0) updates.unsettledAmount = 0;
+        if (updates.settledAmount !== undefined && updates.settledAmount < 0) updates.settledAmount = 0;
+        
         db.ref(`inventory/${productIndex}`).update(updates);
       }
       showNotification(`订单 ${id} 已删除`);
