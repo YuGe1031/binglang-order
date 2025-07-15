@@ -2369,17 +2369,13 @@
       return;
     }
     db.ref(`orders/${id}/delivered`).set(true);
-    // 更新库存结账金额
+    // 更新库存：增加已售出数量
     const invArr = getInventoryArray();
     const productIndex = invArr.findIndex(p => p.name === order.item);
     if (productIndex >= 0) {
       const product = invArr[productIndex];
-      const newSettled = (product.settledAmount || 0) + order.price;
-      const newUnsettled = (product.unsettledAmount || 0) - order.price;
       const newSold = (product.sold || 0) + order.quantity;
       db.ref(`inventory/${productIndex}`).update({
-        settledAmount: newSettled,
-        unsettledAmount: newUnsettled,
         sold: newSold
       });
     }
@@ -2461,13 +2457,18 @@
       const productIndex = invArr.findIndex(p => p.name === order.item);
       if (productIndex >= 0) {
         const product = invArr[productIndex];
-        const newRemaining = (product.remainingStock || 0) + order.quantity;
-        let updates = { remainingStock: newRemaining };
-        if (order.delivered) {
-          updates.settledAmount = (product.settledAmount || 0) - order.price;
-          updates.sold = (product.sold || 0) - order.quantity;
+        let updates = {};
+        if (!order.delivered) {
+            // 未送货：恢复剩余库存和未结账金额
+            updates.remainingStock = (product.remainingStock || 0) + order.quantity;
+            updates.unsettledAmount = (product.unsettledAmount || 0) - (order.price * order.quantity);
         } else {
-          updates.unsettledAmount = (product.unsettledAmount || 0) - order.price;
+            // 已送货：恢复已售出数量
+            updates.sold = (product.sold || 0) - order.quantity;
+            // 如果订单已结账，还需要恢复结账金额
+            if (order.settled) {
+                updates.settledAmount = (product.settledAmount || 0) - (order.price * order.quantity);
+            }
         }
         db.ref(`inventory/${productIndex}`).update(updates);
       }
@@ -2565,8 +2566,9 @@
     const productIndex = invArr.findIndex(p => p.name === order.item);
     if (productIndex >= 0) {
       const product = invArr[productIndex];
-      const newSettled = (product.settledAmount || 0) + order.price;
-      const newUnsettled = (product.unsettledAmount || 0) - order.price;
+      const amount = order.price * order.quantity;
+      const newSettled = (product.settledAmount || 0) + amount;
+      const newUnsettled = (product.unsettledAmount || 0) - amount;
       db.ref(`inventory/${productIndex}`).update({
         settledAmount: newSettled,
         unsettledAmount: newUnsettled
@@ -2597,8 +2599,9 @@
       const productIndex = invArr.findIndex(p => p.name === order.item);
       if (productIndex >= 0) {
         const product = invArr[productIndex];
-        const newSettled = (product.settledAmount || 0) + order.price;
-        const newUnsettled = (product.unsettledAmount || 0) - order.price;
+        const amount = order.price * order.quantity;
+        const newSettled = (product.settledAmount || 0) + amount;
+        const newUnsettled = (product.unsettledAmount || 0) - amount;
         db.ref(`inventory/${productIndex}`).update({
           settledAmount: newSettled,
           unsettledAmount: newUnsettled
